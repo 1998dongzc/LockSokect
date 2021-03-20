@@ -1,14 +1,10 @@
 import redis.clients.jedis.Jedis;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.sql.Connection;
 
 
 public class LocalServer {
@@ -27,24 +23,28 @@ public class LocalServer {
             if ((res = in.readLine()) != null) {
                 System.out.println(res);
                 String[] split = res.split("\\|");
-                String ops=split[0];
-                String ip=split[1];
-                doLock(ops,ip);
+                String ops = split[0];
+                String ip = split[1];
+                String token = split[2];
+                if (JwtUtil.verifyToken(token))
+                    doLock(ops, ip);
+                else
+                    jedis.set(ip,"Token is not valid");
             }
             in.close();
             accept.close();
         }
     }
 
-    private static boolean doLock(String res,String ip) {
+    private static boolean doLock(String res, String ip) {
         jedis = new Jedis("121.4.252.231", 6379);
         jedis.auth("Dzc021258");
         try {
-            if (res.equals("lock")) {
+            if (Val.LOCK.equals(res)) {
                 Val.key = 1;
-                Thread2 t2 = new Thread2();
+                LockThread t2 = new LockThread();
                 t2.start();
-            } else if (res.equals("unlock")) {
+            } else if (Val.UNLOCK.equals(res)) {
                 Val.key = 0;
                 Robot robot = new Robot();
                 robot.keyPress(KeyEvent.VK_ENTER);
@@ -57,25 +57,21 @@ public class LocalServer {
         } catch (AWTException e) {
             e.printStackTrace();
             return false;
-        }finally {
-            jedis.set(ip,res);
+        } finally {
+            jedis.set(ip, res);
             jedis.close();
         }
 
     }
 
     public static void init() {
-        Val.lock = true;
-        Val.key = 1;
-        Thread2 t2 = new Thread2();
-        t2.start();
+        try {
+            Val.key = 1;
+            LockThread t2 = new LockThread();
+            t2.start();
+        } catch (Exception exception) {
+            System.out.println("上锁失败");
+        }
     }
 
-    public static void setRedis() {
-
-    }
-
-    public static void main1(String[] args) {
-        setRedis();
-    }
 }

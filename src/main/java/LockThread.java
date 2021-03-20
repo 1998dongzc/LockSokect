@@ -6,7 +6,7 @@ import java.io.IOException;
  * @description:
  * @email：532587041@qq.com
  */
-public class Thread2 extends Thread{
+public class LockThread extends Thread{
 
     @Override
     public void run() {
